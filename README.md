@@ -25,8 +25,6 @@ Este boilerplate nasceu da extração dos padrões de arquitetura, segurança e 
 15. [Conectando frontend e backend em produção](#15-conectando-frontend-e-backend-em-produção)
 16. [Checklist de segurança pré-produção](#16-checklist-de-segurança-pré-produção)
 17. [Troubleshooting comum](#17-troubleshooting-comum)
-18. [Próximos passos sugeridos](#18-próximos-passos-sugeridos)
-
 ---
 
 ## 1. Visão geral e filosofia
@@ -763,16 +761,3 @@ Isso é **intencional** — `validateServerEnv()` recusa iniciar sem as variáve
 O IP do servidor (ou seu IP local) não está liberado em **Network Access** no Atlas. Para o Render, libere `0.0.0.0/0` (veja seção 7.5).
 
 ---
-
-## 18. Próximos passos sugeridos
-
-Já incluídos neste boilerplate: CI no GitHub Actions (`.github/workflows/ci.yml`, roda `typecheck`/`test`/`lint`/`build` dos dois pacotes a cada push/PR), `LICENSE` (MIT, edite o titular), `.nvmrc` e `ErrorBoundary` no frontend.
-
-Sugestões para evoluir a partir daqui:
-
-- Páginas administrativas para `GET /admin/audit-logs` e `GET /admin/contact-messages` (hoje só existem como rota de API — siga o padrão de `PostsAdminPage.tsx` para criar a UI);
-- Testes de integração do backend contra um MongoDB real (ex.: `mongodb-memory-server`), cobrindo login → refresh → rotação de sessão e o CRUD de Post ponta a ponta — hoje a suíte cobre funções puras e middlewares isolados, mas não exercita os fluxos completos contra o banco;
-- Paginação em `/posts`, `/admin/posts` e `/admin/audit-logs` (hoje retornam tudo de uma vez — aceitável em baixa escala, vira gargalo com muitos registros);
-- Testes end-to-end (Playwright) cobrindo o fluxo de login + CRUD de Post pela UI real;
-- Monitoramento de erros em produção (ex.: Sentry) no backend e no frontend;
-- Alertas de uptime (ex.: UptimeRobot apontando para `/health` no Render, para mitigar o efeito do cold start mantendo o serviço "aquecido").
