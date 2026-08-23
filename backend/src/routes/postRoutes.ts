@@ -2,15 +2,26 @@ import { Router } from 'express';
 import Post from '../models/Post';
 import { protect, requireRole, type AuthRequest } from '../middlewares/authMiddleware';
 import { toPostDto, toPublicPostDto } from '../dto';
-import { isNonEmptyString, isValidObjectId, isValidSlug } from '../utils/validation';
+import {
+  isNonEmptyString,
+  isValidHttpUrl,
+  isValidObjectId,
+  isValidSlug,
+} from '../utils/validation';
 import { recordAuditLog } from '../utils/audit';
 import { isDuplicateKeyError } from '../utils/mongoErrors';
+import { parsePagination, toPaginatedResult } from '../utils/pagination';
 
 const router = Router();
 
-router.get('/posts', async (_req, res) => {
-  const posts = await Post.find({ published: true }).sort({ createdAt: -1 });
-  res.json({ data: posts.map(toPublicPostDto) });
+router.get('/posts', async (req, res) => {
+  const { page, limit, skip } = parsePagination(req.query as Record<string, unknown>);
+  const filter = { published: true };
+  const [posts, total] = await Promise.all([
+    Post.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit),
+    Post.countDocuments(filter),
+  ]);
+  res.json({ data: toPaginatedResult(posts.map(toPublicPostDto), total, page, limit) });
 });
 
 router.get('/posts/:slug', async (req, res) => {
@@ -22,9 +33,13 @@ router.get('/posts/:slug', async (req, res) => {
   res.json({ data: toPublicPostDto(post) });
 });
 
-router.get('/admin/posts', protect, async (_req, res) => {
-  const posts = await Post.find().sort({ createdAt: -1 });
-  res.json({ data: posts.map(toPostDto) });
+router.get('/admin/posts', protect, async (req, res) => {
+  const { page, limit, skip } = parsePagination(req.query as Record<string, unknown>);
+  const [posts, total] = await Promise.all([
+    Post.find().sort({ createdAt: -1 }).skip(skip).limit(limit),
+    Post.countDocuments(),
+  ]);
+  res.json({ data: toPaginatedResult(posts.map(toPostDto), total, page, limit) });
 });
 
 router.get('/admin/posts/:id', protect, async (req, res) => {
@@ -41,11 +56,16 @@ router.get('/admin/posts/:id', protect, async (req, res) => {
   res.json({ data: toPostDto(post) });
 });
 
-router.post('/admin/posts', protect, requireRole('admin', 'editor'), async (req: AuthRequest, res) => {
+router.post('/admin/posts', protect, requireRole('admin'), async (req: AuthRequest, res) => {
   const { title, slug, excerpt, content, coverImageUrl, published } = req.body as Record<string, unknown>;
 
   if (!isNonEmptyString(title) || !isValidSlug(slug) || !isNonEmptyString(content)) {
     res.status(400).json({ error: { code: 'INVALID_INPUT', message: 'Informe titulo, slug e conteudo validos.' } });
+    return;
+  }
+
+  if (coverImageUrl !== undefined && !isValidHttpUrl(coverImageUrl)) {
+    res.status(400).json({ error: { code: 'INVALID_INPUT', message: 'coverImageUrl deve ser uma URL http(s).' } });
     return;
   }
 
@@ -59,7 +79,12 @@ router.post('/admin/posts', protect, requireRole('admin', 'editor'), async (req:
       published: Boolean(published),
     });
 
-    await recordAuditLog({ adminId: req.adminId!, action: 'create', resource: 'post', resourceId: String(post._id) });
+    await recordAuditLog(req, {
+      action: 'create',
+      resource: 'post',
+      resourceId: String(post._id),
+      metadata: { title: post.title, slug: post.slug, published: post.published },
+    });
     res.status(201).json({ data: toPostDto(post) });
   } catch (error) {
     if (isDuplicateKeyError(error)) {
@@ -70,7 +95,7 @@ router.post('/admin/posts', protect, requireRole('admin', 'editor'), async (req:
   }
 });
 
-router.put('/admin/posts/:id', protect, requireRole('admin', 'editor'), async (req: AuthRequest, res) => {
+router.put('/admin/posts/:id', protect, requireRole('admin'), async (req: AuthRequest, res) => {
   if (!isValidObjectId(req.params.id)) {
     res.status(400).json({ error: { code: 'INVALID_INPUT', message: 'Identificador invalido.' } });
     return;
@@ -89,6 +114,10 @@ router.put('/admin/posts/:id', protect, requireRole('admin', 'editor'), async (r
     res.status(400).json({ error: { code: 'INVALID_INPUT', message: 'Conteudo invalido.' } });
     return;
   }
+  if (coverImageUrl !== undefined && !isValidHttpUrl(coverImageUrl)) {
+    res.status(400).json({ error: { code: 'INVALID_INPUT', message: 'coverImageUrl deve ser uma URL http(s).' } });
+    return;
+  }
 
   try {
     const post = await Post.findByIdAndUpdate(
@@ -101,7 +130,7 @@ router.put('/admin/posts/:id', protect, requireRole('admin', 'editor'), async (r
         ...(coverImageUrl !== undefined ? { coverImageUrl } : {}),
         ...(published !== undefined ? { published: Boolean(published) } : {}),
       },
-      { new: true },
+      { returnDocument: 'after' },
     );
 
     if (!post) {
@@ -109,7 +138,14 @@ router.put('/admin/posts/:id', protect, requireRole('admin', 'editor'), async (r
       return;
     }
 
-    await recordAuditLog({ adminId: req.adminId!, action: 'update', resource: 'post', resourceId: String(post._id) });
+    await recordAuditLog(req, {
+      action: 'update',
+      resource: 'post',
+      resourceId: String(post._id),
+      // Guarda o que mudou (nao o documento inteiro): o audit log precisa ser
+      // legivel e barato, o conteudo completo ja esta na colecao de posts.
+      metadata: { fields: Object.keys(req.body as Record<string, unknown>), slug: post.slug },
+    });
     res.json({ data: toPostDto(post) });
   } catch (error) {
     if (isDuplicateKeyError(error)) {
@@ -132,7 +168,12 @@ router.delete('/admin/posts/:id', protect, requireRole('admin'), async (req: Aut
     return;
   }
 
-  await recordAuditLog({ adminId: req.adminId!, action: 'delete', resource: 'post', resourceId: String(post._id) });
+  await recordAuditLog(req, {
+    action: 'delete',
+    resource: 'post',
+    resourceId: String(post._id),
+    metadata: { title: post.title, slug: post.slug },
+  });
   res.json({ data: { deleted: true } });
 });
 

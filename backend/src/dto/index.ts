@@ -51,3 +51,75 @@ export function toPublicPostDto(post: IPost): PublicPostDto {
   const { published: _published, ...rest } = toPostDto(post);
   return rest;
 }
+
+export type AuditLogDto = {
+  id: string;
+  adminId?: string;
+  adminEmail?: string;
+  adminName?: string;
+  action: string;
+  resource: string;
+  resourceId?: string;
+  status: string;
+  ip?: string;
+  userAgent?: string;
+  requestId?: string;
+  metadata?: Record<string, unknown>;
+  createdAt: Date;
+};
+
+export function toAuditLogDto(log: {
+  _id: unknown;
+  adminId?: unknown;
+  adminEmail?: string | null;
+  adminName?: string | null;
+  action: string;
+  resource: string;
+  resourceId?: string | null;
+  status?: string | null;
+  ip?: string | null;
+  userAgent?: string | null;
+  requestId?: string | null;
+  metadata?: Record<string, unknown> | null;
+  createdAt: Date;
+}): AuditLogDto {
+  return {
+    id: String(log._id),
+    adminId: log.adminId ? String(log.adminId) : undefined,
+    adminEmail: log.adminEmail ?? undefined,
+    adminName: log.adminName ?? undefined,
+    action: log.action,
+    resource: log.resource,
+    resourceId: log.resourceId ?? undefined,
+    status: log.status ?? 'success',
+    ip: log.ip ?? undefined,
+    userAgent: log.userAgent ?? undefined,
+    requestId: log.requestId ?? undefined,
+    metadata: log.metadata ?? undefined,
+    createdAt: log.createdAt,
+  };
+}
+
+export type ContactMessageDto = {
+  id: string;
+  name: string;
+  email: string;
+  message: string;
+  createdAt: Date;
+};
+
+export function toContactMessageDto(entry: {
+  _id: unknown;
+  name: string;
+  email: string;
+  message: string;
+  createdAt: Date;
+}): ContactMessageDto {
+  return {
+    id: String(entry._id),
+    name: entry.name,
+    email: entry.email,
+    message: entry.message,
+    createdAt: entry.createdAt,
+  };
+}

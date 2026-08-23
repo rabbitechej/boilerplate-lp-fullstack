@@ -2,6 +2,7 @@ import 'dotenv/config';
 import bcrypt from 'bcrypt';
 import { connectDatabase, disconnectDatabase } from '../config/db';
 import Admin from '../models/Admin';
+import { logger } from '../utils/logger';
 import { isValidEmail, isNonEmptyString } from '../utils/validation';
 
 async function run(): Promise<void> {
@@ -19,7 +20,7 @@ async function run(): Promise<void> {
 
   const existing = await Admin.findOne({ email: email.trim().toLowerCase() });
   if (existing) {
-    console.log(`Ja existe um administrador com o email ${email}.`);
+    logger.info('ja existe um administrador com esse email', { email });
     await disconnectDatabase();
     return;
   }
@@ -33,11 +34,11 @@ async function run(): Promise<void> {
     active: true,
   });
 
-  console.log(`Administrador criado com sucesso: ${admin.email} (id: ${admin._id})`);
+  logger.info('administrador criado', { email: admin.email, id: String(admin._id) });
   await disconnectDatabase();
 }
 
 run().catch((error) => {
-  console.error('Erro ao criar administrador:', error);
+  logger.error('erro ao criar administrador', { err: error });
   process.exit(1);
 });

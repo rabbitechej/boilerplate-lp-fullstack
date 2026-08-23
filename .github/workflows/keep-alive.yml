@@ -1,0 +1,67 @@
+name: Keep-alive
+
+# No plano free do Render o servico dorme apos ~15 min sem trafego e o
+# proximo request paga o cold start. Este cron bate no /ready a cada 5 min
+# para manter a API acordada (margem contra drift do cron do GitHub). Se o
+# plano nao dormir, ainda serve de smoke de uptime (banco conectado). Nao
+# precisa de secret: a URL e publica.
+#
+# Complemento: o backend tambem faz self-ping interno (utils/keepAliveSelfPing)
+# enquanto o processo esta acordado; este cron cobre o caso em que ja dormiu.
+on:
+  schedule:
+    # A cada 5 minutos. Mais seguro que 12: o cron do GitHub pode atrasar
+    # alguns minutos e o sleep do Render free e ~15 min.
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ping:
+    name: Ping da API no Render
+    runs-on: ubuntu-latest
+    # Mesmas vars do deploy (API_BASE_URL em Settings > Environments > production).
+    environment: production
+    steps:
+      # Mesmo endpoint que o deploy usa apos publicar: /ready so responde
+      # 200 com o Mongo conectado, entao um 5xx aqui e alerta real, nao so
+      # processo morto.
+      #
+      # Cold start no Render free costuma levar 30–60s+. Um unico curl com
+      # --max-time 30 falha enquanto a API ainda esta acordando — o primeiro
+      # request ja dispara o wake; as tentativas seguintes costumam passar.
+      - name: Confirma que a API esta respondendo
+        env:
+          API_BASE_URL: ${{ vars.API_BASE_URL }}
+        run: |
+          if [ -z "${API_BASE_URL}" ]; then
+            echo 'Variavel API_BASE_URL ausente (Settings > Environments > production).'
+            exit 1
+          fi
+
+          url="${API_BASE_URL}/ready"
+          attempts=5
+          delay=10
+
+          for i in $(seq 1 "${attempts}"); do
+            echo "Tentativa ${i}/${attempts}: GET ${url}"
+            if curl --fail-with-body --silent --show-error \
+              --connect-timeout 20 --max-time 90 \
+              --retry 0 \
+              "${url}"; then
+              echo
+              echo "API ok."
+              exit 0
+            fi
+
+            if [ "${i}" -lt "${attempts}" ]; then
+              echo "Falha (cold start ou indisponivel); aguardando ${delay}s..."
+              sleep "${delay}"
+              delay=$((delay * 2))
+            fi
+          done
+
+          echo "API nao respondeu 200 em ${attempts} tentativas."
+          exit 1

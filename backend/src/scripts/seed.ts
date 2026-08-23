@@ -1,6 +1,8 @@
 import 'dotenv/config';
 import { connectDatabase, disconnectDatabase } from '../config/db';
+import { isBlogEnabled } from '../config/env';
 import Post from '../models/Post';
+import { logger } from '../utils/logger';
 
 const SAMPLE_POSTS = [
   {
@@ -27,17 +29,23 @@ const SAMPLE_POSTS = [
 ];
 
 async function run(): Promise<void> {
+  if (!isBlogEnabled()) {
+    // Sem as rotas montadas, semear posts so' deixaria lixo no banco.
+    logger.warn('seed ignorado: o modulo de blog esta desligado (ENABLE_BLOG=false)');
+    return;
+  }
+
   await connectDatabase();
 
   for (const post of SAMPLE_POSTS) {
     await Post.findOneAndUpdate({ slug: post.slug }, post, { upsert: true });
   }
 
-  console.log(`Seed concluido: ${SAMPLE_POSTS.length} posts de exemplo.`);
+  logger.info('seed concluido', { posts: SAMPLE_POSTS.length });
   await disconnectDatabase();
 }
 
 run().catch((error) => {
-  console.error('Erro ao executar o seed:', error);
+  logger.error('erro ao executar o seed', { err: error });
   process.exit(1);
 });

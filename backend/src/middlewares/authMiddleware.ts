@@ -3,10 +3,13 @@ import { getSessionIdleTtlMs } from '../config/env';
 import { verifyAccessToken } from '../auth/tokens';
 import Admin, { type AdminRole } from '../models/Admin';
 import AuthSession from '../models/AuthSession';
+import { updateRequestContext } from '../utils/requestContext';
 
 export interface AuthRequest extends Request {
   adminId?: string;
   adminRole?: AdminRole;
+  adminEmail?: string;
+  adminName?: string;
   sessionId?: string;
 }
 
@@ -33,7 +36,7 @@ export async function protect(req: AuthRequest, res: Response, next: NextFunctio
         { $set: { lastUsedAt: now } },
         { returnDocument: 'after' },
       ).select('_id'),
-      Admin.findOne({ _id: claims.adminId, active: true }).select('_id role').lean(),
+      Admin.findOne({ _id: claims.adminId, active: true }).select('_id role email name').lean(),
     ]);
 
     if (!session || !admin) {
@@ -43,7 +46,11 @@ export async function protect(req: AuthRequest, res: Response, next: NextFunctio
 
     req.adminId = claims.adminId;
     req.adminRole = admin.role as AdminRole;
+    req.adminEmail = admin.email;
+    req.adminName = admin.name;
     req.sessionId = claims.sessionId;
+    // A partir daqui todo log da requisicao sai identificado com o admin.
+    updateRequestContext({ adminId: claims.adminId, adminEmail: admin.email });
     next();
   } catch {
     res.status(401).json({ error: { code: 'INVALID_TOKEN', message: 'Token invalido ou expirado.' } });

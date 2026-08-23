@@ -1,0 +1,27 @@
+---
+description: Padrões do frontend (React + Vite)
+globs: frontend/src/**/*.ts,frontend/src/**/*.tsx
+---
+
+# Frontend
+
+**Router é próprio.** Rota nova = entrada em `routes`, variante em `AppRoute`, teste em `routing.test.ts` e render em `App.tsx`. Não instale react-router.
+
+**Toda chamada de API passa pelo `apiClient`** (`api/client.ts`) — ele já faz `credentials: 'include'`, timeout, desembrulha o `{ data }` e converte erro em `ApiError`. `fetch` cru só onde o corpo não é JSON (upload de arquivo).
+
+**Access token vive em memória**, no `AuthContext`. **Nunca** coloque em `localStorage`/`sessionStorage` — o refresh token está num cookie httpOnly justamente para sobreviver a XSS.
+
+**Feature flags** vêm de `config/features.ts` (`VITE_*`, embutidas no build, não lidas em runtime). Toda flag tem par no backend; desligar só de um lado deixa link levando a 404.
+
+**Esconder no frontend é usabilidade, não segurança.** Quem autoriza é o `requireRole` no servidor.
+
+**Formulário:** campo controlado só quando um campo alimenta outro; o resto lê do `FormData` no submit. Depois de um `await`, `event.currentTarget` já é `null` — guarde a referência do form antes.
+
+**Notificação por e-mail (Web3Forms)** é sempre depois do POST que persiste, em fire-and-forget:
+
+```ts
+await apiClient.post('/contact', payload);        // fonte da verdade
+void notifyContactMessage(payload).catch(console.error);  // e-mail não pode derrubar o UX
+```
+
+Erro de carregamento vai para estado e aparece em `<p role="alert">`, nunca só no console.

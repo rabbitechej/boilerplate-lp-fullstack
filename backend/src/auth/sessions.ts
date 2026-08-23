@@ -1,6 +1,6 @@
 import type { Request } from 'express';
 import { getRefreshTokenTtlMs, getSessionIdleTtlMs } from '../config/env';
-import AuthSession, { type IAuthSession } from '../models/AuthSession';
+import AuthSession from '../models/AuthSession';
 import {
   createRefreshSecret,
   formatRefreshToken,
@@ -64,41 +64,27 @@ export async function rotateAuthSession(rawToken: string) {
   return undefined;
 }
 
-export async function revokeSession(sessionId: string, reason: string): Promise<void> {
-  await AuthSession.updateOne(
-    { _id: sessionId, revokedAt: { $exists: false } },
-    { $set: { revokedAt: new Date(), revocationReason: reason } },
-  );
-}
-
-export async function revokeSessionByRefreshToken(rawToken: string, reason: string): Promise<void> {
+/**
+ * Revoga a sessao do refresh token informado. Devolve quem era o dono para que
+ * o chamador possa auditar o evento (o logout nao passa pelo `protect`, entao
+ * essa e' a unica forma de saber de quem foi a sessao encerrada).
+ */
+export async function revokeSessionByRefreshToken(
+  rawToken: string,
+  reason: string,
+): Promise<{ sessionId: string; adminId: string } | undefined> {
   const parsed = parseRefreshToken(rawToken);
-  if (!parsed) return;
-  await AuthSession.updateOne(
+  if (!parsed) return undefined;
+  const session = await AuthSession.findOneAndUpdate(
     {
       _id: parsed.sessionId,
       refreshTokenHash: hashRefreshSecret(parsed.secret),
       revokedAt: { $exists: false },
     },
     { $set: { revokedAt: new Date(), revocationReason: reason } },
-  );
+  ).select('_id adminId');
+
+  if (!session) return undefined;
+  return { sessionId: String(session._id), adminId: String(session.adminId) };
 }
 
-export async function revokeAllAdminSessions(adminId: string, reason: string): Promise<void> {
-  await AuthSession.updateMany(
-    { adminId, revokedAt: { $exists: false } },
-    { $set: { revokedAt: new Date(), revocationReason: reason } },
-  );
-}
-
-export function serializeSession(session: IAuthSession, currentSessionId: string) {
-  return {
-    id: String(session._id),
-    current: String(session._id) === currentSessionId,
-    ip: session.ip,
-    userAgent: session.userAgent,
-    createdAt: (session as unknown as { createdAt: Date }).createdAt,
-    lastUsedAt: session.lastUsedAt,
-    expiresAt: session.expiresAt,
-  };
-}

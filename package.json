@@ -9,6 +9,9 @@
     "build": "npm run build --prefix backend && npm run build --prefix frontend",
     "typecheck": "npm run typecheck --prefix backend && npm run typecheck --prefix frontend",
     "test": "npm test --prefix backend && npm test --prefix frontend",
+    "test:integration": "npm run test:integration --prefix backend",
+    "test:e2e": "npm run test:e2e --prefix frontend",
+    "test:all": "npm run test:all --prefix backend && npm test --prefix frontend",
     "lint": "npm run lint --prefix backend && npm run lint --prefix frontend"
   },
   "devDependencies": {

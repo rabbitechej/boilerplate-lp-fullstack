@@ -1,0 +1,26 @@
+---
+description: Auditoria de segurança antes de deploy ou ao mexer em auth, rotas admin, upload e validação de entrada
+alwaysApply: false
+---
+
+# Auditoria de segurança
+
+Base: seção 16 do README. Verifique **executando**, não só lendo.
+
+**Erro de cliente não pode virar 500.** Teste: POST sem `Content-Type`, JSON quebrado, corpo acima de 1MB, campo acima do `maxlength`. Todo `const { x } = req.body` é candidato — no Express 5 `req.body` fica `undefined` sem corpo parseado.
+
+**Rota admin sem `requireRole`:** `grep -rn "protect" backend/src/routes` e confira uma a uma.
+
+**Validação que não espelha o schema** → erro estoura no Mongo, tarde e como 500.
+
+**Segredo em log:** a máscara pega nomes previsíveis; campo sensível com nome diferente passa. Confira o que entra em `metadata` de auditoria.
+
+**URL de formulário** renderizada pelo frontend tem que ser `http(s)` validada.
+
+**Coleção que só cresce** (sessão, rate limit, auditoria) precisa de TTL ou política explícita.
+
+**Produção:** `ENABLE_API_DOCS` desligado; `CORS_ORIGINS` sem `*`; `AUTH_COOKIE_SECURE=true`; `JWT_SECRET` forte e diferente do de dev; `TRUST_PROXY` coerente com o proxy real (errado, estraga o rate limit por IP e o IP da auditoria); módulo não usado desligado nas duas pontas.
+
+**Segredo no histórico:** `git log -p -- '*.env*'`. Se já foi commitado, está vazado — rotacione, não apague.
+
+Reporte por severidade, com cenário concreto, arquivo/linha, correção e o comando que prova que foi corrigido. Separe o que você verificou executando do que inferiu lendo.

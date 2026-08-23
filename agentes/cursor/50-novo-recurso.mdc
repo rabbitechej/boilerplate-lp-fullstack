@@ -1,0 +1,23 @@
+---
+description: Adicionar um recurso CRUD novo (depoimentos, serviços, portfólio, FAQ)
+alwaysApply: false
+---
+
+# Recurso novo
+
+**Leia `backend/src/routes/postRoutes.ts` inteiro antes de escrever.** Ele é o modelo vivo do padrão — o código é a versão atual, o texto do README pode ter envelhecido.
+
+Pergunte antes: campos e obrigatoriedade; tem slug?; tem imagem (upload existente ou URL colada?); tem parte pública e rascunho (`published`)? Não invente esses campos.
+
+Sequência:
+
+1. **Model** — `maxlength` em todo texto, `timestamps: true`, índice do que a listagem ordena/filtra.
+2. **`ensureRequiredIndexes`** em `config/db.ts` — esquecer = sem índice em produção.
+3. **DTO** — `toXDto` e `toPublicXDto` se houver leitura pública.
+4. **Rotas** — pública filtra `published: true`; `GET /admin/x/:id` para a tela de edição; escrita com `protect` + `requireRole('admin')`; `parsePagination`; `isDuplicateKeyError` → `409`; `recordAuditLog(req, …)` em create/update/delete.
+5. **Montar** em `app.ts`, dentro do `apiV1`.
+6. **OpenAPI** em `docs/openapi.ts`.
+7. **Frontend** — tipo em `api/types.ts`, chamadas em `api/admin.ts`, página em `admin/`, rota em `routing.ts` + `App.tsx`, link no `AdminPortal`.
+8. **Testes** do que tem decisão.
+
+Se tiver slug: gere a partir do título **só na criação** (`utils/slugify.ts`), nunca na edição — slug publicado é URL divulgada e não há redirect 301 aqui.

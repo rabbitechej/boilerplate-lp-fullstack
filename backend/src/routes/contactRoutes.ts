@@ -2,7 +2,9 @@ import { Router } from 'express';
 import { rateLimit } from '../middlewares/rateLimit';
 import { protect, requireRole } from '../middlewares/authMiddleware';
 import ContactMessage from '../models/ContactMessage';
-import { isNonEmptyString, isValidEmail } from '../utils/validation';
+import { toContactMessageDto } from '../dto';
+import { isTextWithinLimit, isValidEmail } from '../utils/validation';
+import { parsePagination, toPaginatedResult } from '../utils/pagination';
 
 const router = Router();
 
@@ -11,9 +13,13 @@ const contactRateLimit = rateLimit({ windowMs: 60 * 60 * 1000, max: 20, keyPrefi
 router.post('/contact', contactRateLimit, async (req, res) => {
   const { name, email, message } = req.body as Record<string, unknown>;
 
-  if (!isNonEmptyString(name) || !isValidEmail(email) || !isNonEmptyString(message)) {
+  // Os limites espelham o schema de ContactMessage.
+  if (!isTextWithinLimit(name, 120) || !isValidEmail(email) || !isTextWithinLimit(message, 4000)) {
     res.status(400).json({
-      error: { code: 'INVALID_INPUT', message: 'Informe nome, email valido e mensagem.' },
+      error: {
+        code: 'INVALID_INPUT',
+        message: 'Informe nome (ate 120), email valido e mensagem (ate 4000 caracteres).',
+      },
     });
     return;
   }
@@ -27,16 +33,24 @@ router.post('/contact', contactRateLimit, async (req, res) => {
   res.status(201).json({ data: { received: true } });
 });
 
-router.get('/admin/contact-messages', protect, requireRole('admin', 'editor'), async (_req, res) => {
-  const messages = await ContactMessage.find().sort({ createdAt: -1 }).limit(200).lean();
+router.get('/admin/contact-messages', protect, requireRole('admin'), async (req, res) => {
+  const { page, limit, skip } = parsePagination(req.query as Record<string, unknown>);
+  const [messages, total] = await Promise.all([
+    ContactMessage.find().sort({ createdAt: -1 }).skip(skip).limit(limit).lean(),
+    ContactMessage.countDocuments(),
+  ]);
   res.json({
-    data: messages.map((entry) => ({
-      id: String(entry._id),
-      name: entry.name,
-      email: entry.email,
-      message: entry.message,
-      createdAt: (entry as unknown as { createdAt: Date }).createdAt,
-    })),
+    data: toPaginatedResult(
+      messages.map((entry) =>
+        toContactMessageDto({
+          ...entry,
+          createdAt: (entry as unknown as { createdAt: Date }).createdAt,
+        }),
+      ),
+      total,
+      page,
+      limit,
+    ),
   });
 });
 

@@ -14,6 +14,11 @@ const authSessionSchema = new Schema(
   { timestamps: true },
 );
 
+// Sessao vencida ja' e' inutil para autenticar (protect e rotateAuthSession
+// exigem expiresAt > agora). Sem este TTL a colecao cresceria para sempre —
+// o historico de quem entrou fica no audit log, nao aqui.
+authSessionSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
+
 export type IAuthSession = InferSchemaType<typeof authSessionSchema> & { _id: Types.ObjectId };
 
 export default model('AuthSession', authSessionSchema);

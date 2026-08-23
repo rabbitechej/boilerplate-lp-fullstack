@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { Brand } from './Brand';
+import { features } from '../config/features';
 import { routes } from '../routing';
 
 export function Layout({ children }: { children: ReactNode }) {
@@ -12,7 +13,7 @@ export function Layout({ children }: { children: ReactNode }) {
         <nav className="layout__nav">
           <a href={routes.home}>Início</a>
           <a href={routes.about}>Sobre</a>
-          <a href={routes.posts}>Conteúdos</a>
+          {features.blog && <a href={routes.posts}>Conteúdos</a>}
           <a href={routes.contact}>Contato</a>
         </nav>
       </header>

@@ -1,3 +1,9 @@
+export const LOG_LEVELS = ['debug', 'info', 'warn', 'error', 'silent'] as const;
+export type LogLevel = (typeof LOG_LEVELS)[number];
+
+export const LOG_FORMATS = ['json', 'pretty'] as const;
+export type LogFormat = (typeof LOG_FORMATS)[number];
+
 const REQUIRED_SERVER_VARIABLES = [
   'MONGODB_URI',
   'JWT_SECRET',
@@ -102,4 +108,63 @@ export function getJwtIssuer(): string {
 
 export function getJwtAudience(): string {
   return process.env.JWT_AUDIENCE?.trim() || 'boilerplate-admin';
+}
+
+/**
+ * Nivel minimo de log. Padrao: `debug` em desenvolvimento, `info` em producao e
+ * `silent` durante os testes (para nao poluir a saida do runner).
+ */
+export function getLogLevel(): LogLevel {
+  const configured = process.env.LOG_LEVEL?.trim().toLowerCase();
+  if (configured && (LOG_LEVELS as readonly string[]).includes(configured)) {
+    return configured as LogLevel;
+  }
+  if (configured) {
+    throw new Error(`LOG_LEVEL invalido: ${configured}. Use um de: ${LOG_LEVELS.join(', ')}`);
+  }
+  // NODE_TEST_CONTEXT e' definido pelo runner do `node --test`.
+  if (process.env.NODE_ENV === 'test' || process.env.NODE_TEST_CONTEXT) return 'silent';
+  return process.env.NODE_ENV === 'production' ? 'info' : 'debug';
+}
+
+/**
+ * Formato da saida: `json` (uma linha por evento, para agregadores tipo Render,
+ * Datadog ou Loki) ou `pretty` (legivel no terminal). Padrao: json em producao.
+ */
+export function getLogFormat(): LogFormat {
+  const configured = process.env.LOG_FORMAT?.trim().toLowerCase();
+  if (configured && (LOG_FORMATS as readonly string[]).includes(configured)) {
+    return configured as LogFormat;
+  }
+  if (configured) {
+    throw new Error(`LOG_FORMAT invalido: ${configured}. Use um de: ${LOG_FORMATS.join(', ')}`);
+  }
+  return process.env.NODE_ENV === 'production' ? 'json' : 'pretty';
+}
+
+/**
+ * Swagger UI (`/api/docs`) fica ligado fora de producao e desligado em
+ * producao. Expor o mapa completo da API — incluindo rotas administrativas —
+ * so' facilita reconhecimento; quem realmente precisa liga com
+ * `ENABLE_API_DOCS=true` (idealmente atras de uma rede/proxy restrito).
+ */
+export function isApiDocsEnabled(): boolean {
+  const configured = process.env.ENABLE_API_DOCS?.trim().toLowerCase();
+  if (configured === 'true' || configured === '1') return true;
+  if (configured === 'false' || configured === '0') return false;
+  return process.env.NODE_ENV !== 'production';
+}
+
+/**
+ * Modulo de blog/conteudos (`Post`). Nem todo projeto que nasce deste
+ * boilerplate precisa de blog — com `ENABLE_BLOG=false` as rotas publicas e
+ * administrativas de posts nao sao montadas (caem no 404 padrao) e o Swagger
+ * deixa de documenta-las. O model continua no codigo: desligar e' reversivel e
+ * nao apaga nada que ja exista no banco.
+ */
+export function isBlogEnabled(): boolean {
+  const configured = process.env.ENABLE_BLOG?.trim().toLowerCase();
+  if (configured === 'false' || configured === '0') return false;
+  if (configured === 'true' || configured === '1') return true;
+  return true;
 }

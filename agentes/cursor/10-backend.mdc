@@ -1,0 +1,35 @@
+---
+description: Padrões do backend (Express + Mongoose)
+globs: backend/**/*.ts
+---
+
+# Backend
+
+**Camadas.** Rota valida entrada e responde. Model é schema. `dto/` serializa Model → DTO. Nada de lógica de domínio dentro do model.
+
+**Nunca use `console.*`.** Use o logger:
+
+```ts
+import { logger } from '../utils/logger';
+
+logger.info('post publicado', { slug: post.slug });
+logger.error('falha ao publicar', { err: error });   // erro sempre no campo `err`
+```
+
+Toda requisição já tem um `requestId` propagado por `AsyncLocalStorage` — o logger anexa sozinho, inclusive em utilitário que não recebe `req`. O logger mascara chaves que parecem segredo (`password`, `senha`, `token`, `secret`, `authorization`, `cookie`, `api_key`); campo sensível com outro nome **passa direto**.
+
+**Ação administrativa que muda estado gera auditoria**, passando o `req` (é dele que saem ator, IP e requestId):
+
+```ts
+await recordAuditLog(req, { action: 'update', resource: 'post', resourceId: String(post._id) });
+```
+
+**Rota administrativa leva `protect` + `requireRole('admin')`.** `protect` só garante sessão; quem autoriza é o `requireRole`. Existe um único cargo (`admin`) — para criar outro, seção 9.1 do README.
+
+**Validação espelha o schema.** Se o model corta em `maxlength: 200`, a rota valida 200 — senão o erro só estoura no Mongo e vira 500 em vez de 400. Toda entrada pública: valide tamanho, e URL vinda de formulário tem que ser `http(s)` (`javascript:`/`data:` viram XSS).
+
+**Listagem usa `parsePagination` + `toPaginatedResult`.** Campo único trata `isDuplicateKeyError` → `409`.
+
+**Model novo entra em `ensureRequiredIndexes`** (`config/db.ts`) — com `autoIndex` desligado em produção, índice não declarado ali simplesmente não existe.
+
+**Módulo opcional se liga/desliga no ponto de montagem** em `app.ts`, não com `if` dentro do handler.
