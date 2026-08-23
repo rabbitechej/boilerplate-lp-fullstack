@@ -1187,26 +1187,3 @@ Para o site. Eles assumem que o projeto **já foi customizado** e trabalham a pa
 Pode. São arquivos de texto, sem efeito no build. Se editar, mexa em `agentes/` (a fonte) e rode o script de novo — editar direto em `.claude/agents/` funciona até a próxima instalação sobrescrever. As convenções que valem a pena manter ao escrever um agente novo estão em `agentes/README.md`.
 
 ---
-
-## 19. Próximos passos sugeridos
-
-Já incluídos neste boilerplate:
-
-- CI no GitHub Actions (`.github/workflows/ci.yml`: typecheck / test / test:integration / lint / build);
-- Keep-alive do Render free (self-ping + cron em `/ready`);
-- Paginação (`page`/`limit`) em posts, audit-logs e contact-messages;
-- Painel admin: **Mensagens** e **Auditoria** (com filtros por ação, recurso, resultado e período);
-- Logs estruturados com `requestId` por requisição e mascaramento de segredos (seção 4.9);
-- Notificação por e-mail do formulário de contato via Web3Forms (seção 7.8);
-- Swagger UI em `/api/docs` — ligado fora de produção, desligado em produção (`ENABLE_API_DOCS`);
-- Testes de integração (`mongodb-memory-server`) e e2e (Playwright);
-- Sentry opcional (`SENTRY_DSN` / `VITE_SENTRY_DSN`);
-- `LICENSE` (MIT, edite o titular), `.nvmrc` e `ErrorBoundary` no frontend.
-
-Sugestões para evoluir a partir daqui:
-
-- Roles adicionais / permissões por recurso (hoje o painel tem um único perfil, `admin` — `requireRole` já está no lugar como ponto de extensão);
-- Cache HTTP / CDN para assets e listagens públicas de posts;
-- Envio de e-mail pelo servidor (Resend, SES) para casos em que o Web3Forms no browser não basta;
-- Retenção/arquivamento do audit log (hoje a coleção cresce indefinidamente — um TTL ou export periódico resolve);
-- Observabilidade além de logs e Sentry (métricas, tracing distribuído).
