@@ -4,6 +4,8 @@ Boilerplate para projetos do tipo **landing page com painel administrativo e bac
 
 Este boilerplate nasceu da extração dos padrões de arquitetura, segurança e organização de código usados em um projeto real (landing page + área administrativa + API com autenticação JWT), removendo o conteúdo de negócio específico e deixando uma base genérica e reutilizável.
 
+> **Para uma IA/agente chegando neste repositório**: leia a seção [Resumo rápido](#resumo-rápido) no final deste arquivo primeiro — ela resume em um parágrafo o que este projeto é e não é. Se for trabalhar de fato no código (não só consultar), instale os agentes da seção [18](#18-agentes-de-ia-agentes): eles carregam os padrões certos automaticamente em vez de você ter que repetir isso a cada conversa.
+
 ---
 
 ## Índice
@@ -26,7 +28,7 @@ Este boilerplate nasceu da extração dos padrões de arquitetura, segurança e 
 16. [Checklist de segurança pré-produção](#16-checklist-de-segurança-pré-produção)
 17. [Troubleshooting comum](#17-troubleshooting-comum)
 18. [Agentes de IA (`agentes/`)](#18-agentes-de-ia-agentes)
-
+19. [Resumo rápido](#resumo-rápido)
 ---
 
 ## 1. Visão geral e filosofia
@@ -1184,5 +1186,11 @@ Para o site. Eles assumem que o projeto **já foi customizado** e trabalham a pa
 
 **Posso editar ou apagar?**
 Pode. São arquivos de texto, sem efeito no build. Se editar, mexa em `agentes/` (a fonte) e rode o script de novo — editar direto em `.claude/agents/` funciona até a próxima instalação sobrescrever. As convenções que valem a pena manter ao escrever um agente novo estão em `agentes/README.md`.
+
+---
+
+## 19. Resumo rápido
+
+Este é um **boilerplate/template**, não um app com histórico próprio de features em andamento — não existe "estado atual do projeto" a resumir, porque cada uso dele é um projeto novo (seção 6). O que uma IA/agente precisa saber antes de mexer aqui: é um monorepo `frontend/` (React 19 + Vite, SPA, router próprio sem lib externa) + `backend/` (Express 5 + TypeScript + MongoDB via Mongoose), com auth JWT completa (access em memória + refresh rotativo em cookie httpOnly, detecção de reuso) já pronta e testada — **não reinvente essa parte**. Mídia vai pro Cloudinary (não há S3/R2). Contrato de API é sempre `{ data }` ou `{ error: { code, message } }` (seção 4.2), DTOs nunca expõem o documento Mongoose cru (seção 4.3), e todo recurso novo segue o tutorial da seção 10 (model → dto → rota → registro em `app.ts` → cliente HTTP → página admin, com as 3 peças da seção 10/Passo 6 — rota, `App.tsx`, link de navegação — ou a página fica inacessível mesmo compilando). Deploy alvo: Render (backend) + Cloudflare Workers (frontend), ambos free tier. Se for **trabalhar de fato no código**, instale os agentes da seção 18 primeiro. Se for **adaptar este boilerplate pra um projeto real** (não só consultá-lo como referência), comece pela seção 6; se for **só copiar um padrão** (ex.: o esquema de permissões, o fluxo de refresh token) pra outro projeto RabbITech, esse é o objetivo declarado do boilerplate — sinta-se livre.
 
 ---
