@@ -1,0 +1,22 @@
+---
+description: Bateria de verificação antes de commit, PR ou deploy
+alwaysApply: false
+---
+
+# Verificação
+
+Da mais rápida para a mais lenta, parando no primeiro erro:
+
+```bash
+npm run typecheck        # backend + frontend
+npm test                 # unitários
+npm run lint
+npm run test:integration # Mongo em memória, mais lento
+npm run build
+```
+
+`npm run test:e2e` fica fora da bateria padrão: exige API no ar e admin real, e sem isso se auto-pula — o "pass" seria falso.
+
+Ao falhar, diagnostique em vez de colar a saída: typecheck do Mongoose costuma ser tipo derivado do schema recusando filtro; integração falhando em *todos* os testes é ambiente (binário do `mongodb-memory-server`), em *um* é código; build quebrando depois de typecheck ok é diferença do `tsconfig.build.json`.
+
+Veredito é binário: **LIBERADO** (as cinco etapas passaram, com o total de testes) ou **BLOQUEADO** (o que falhou, em ordem de correção). Nunca "liberado com ressalvas".

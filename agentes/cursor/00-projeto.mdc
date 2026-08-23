@@ -1,0 +1,31 @@
+---
+description: Contexto e padrões obrigatórios deste projeto
+alwaysApply: true
+---
+
+# Como este projeto funciona
+
+Monorepo de duas pastas independentes, nascido de um boilerplate de landing page + painel admin. **Não é mais o boilerplate**: é o site de um cliente. Ao sugerir código, siga o que já existe aqui, não o que é comum "em projetos React/Express".
+
+- `frontend/` — React 19 + Vite + TypeScript. **Router próprio** (`src/routing.ts`), sem react-router. Sem lib de estado global: `useState` + um `AuthContext`.
+- `backend/` — Express 5 + Mongoose 9 + TypeScript (CommonJS). Sem Jest, sem Vitest: testes com `node:test` + `tsx`.
+
+`README.md` é a fonte da verdade. Seção 4 = padrões, seção 10 = como adicionar recurso, seção 16 = segurança.
+
+## Não negociável
+
+**Contrato da API.** Sucesso: `{ data: ... }`. Erro: `{ error: { code, message } }`, `code` em `SCREAMING_SNAKE_CASE`. Nunca devolva o documento do Mongoose direto — passe por `dto/`, senão vaza `passwordHash`, `__v`, `refreshTokenHash`.
+
+**Idioma.** Identificadores de código em inglês. Mensagem para o usuário final em português. Mensagem de erro da API do backend sem acento (siga as existentes: `'Rota nao encontrada.'`). Comentário explica *por quê*, não *o quê*.
+
+**Arquivos.** Componente React `PascalCase.tsx`; demais `camelCase.ts`. Teste `*.test.ts` **ao lado** do arquivo testado, nunca em `__tests__/`.
+
+**Testes.** `describe` nomeia a unidade, `it` descreve o comportamento em português afirmativo (`it('rejeita email invalido', ...)`).
+
+**Commits.** `tipo(escopo): descrição no imperativo` — `feat`, `fix`, `chore`, `refactor`, `test`, `docs`, `style`, `perf`. Uma task por commit.
+
+## Antes de dizer que terminou
+
+```bash
+npm run typecheck && npm test && npm run lint
+```

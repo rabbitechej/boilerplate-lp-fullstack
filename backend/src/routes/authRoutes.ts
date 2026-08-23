@@ -15,6 +15,7 @@ import {
   rotateAuthSession,
 } from '../auth/sessions';
 import { toAdminDto } from '../dto';
+import { recordAuditLog } from '../utils/audit';
 import { isValidEmail, isNonEmptyString } from '../utils/validation';
 
 const router = Router();
@@ -39,6 +40,15 @@ router.post('/auth/login', loginRateLimit, async (req, res) => {
   const passwordMatches = await bcrypt.compare(password, admin?.passwordHash ?? DUMMY_PASSWORD_HASH);
 
   if (!admin || !passwordMatches) {
+    // Tentativa malsucedida e' justamente o evento que a auditoria precisa
+    // registrar. O email vai junto (com o ator anonimo) para dar rastro.
+    await recordAuditLog(req, {
+      action: 'login',
+      resource: 'auth',
+      status: 'failure',
+      actor: { email: email.trim().toLowerCase() },
+      metadata: { reason: admin ? 'senha_incorreta' : 'admin_inexistente' },
+    });
     res.status(401).json({ error: { code: 'INVALID_CREDENTIALS', message: 'Email ou senha incorretos.' } });
     return;
   }
@@ -48,6 +58,13 @@ router.post('/auth/login', loginRateLimit, async (req, res) => {
     adminId: String(admin._id),
     sessionId: String(session._id),
     role: admin.role,
+  });
+
+  await recordAuditLog(req, {
+    action: 'login',
+    resource: 'auth',
+    resourceId: String(session._id),
+    actor: { id: String(admin._id), email: admin.email, name: admin.name },
   });
 
   setRefreshTokenCookie(res, refreshToken);
@@ -63,6 +80,14 @@ router.post('/auth/refresh', async (req, res) => {
 
   const rotated = await rotateAuthSession(rawToken);
   if (!rotated) {
+    // Cobre token expirado, sessao revogada e reuso de refresh token — todos
+    // sinais de seguranca que merecem ficar no audit log.
+    await recordAuditLog(req, {
+      action: 'refresh',
+      resource: 'auth',
+      status: 'failure',
+      metadata: { reason: 'sessao_invalida_ou_reuso' },
+    });
     clearRefreshTokenCookie(res);
     res.status(401).json({ error: { code: 'SESSION_EXPIRED', message: 'Sessao invalida ou expirada.' } });
     return;
@@ -87,8 +112,14 @@ router.post('/auth/refresh', async (req, res) => {
 
 router.post('/auth/logout', async (req, res) => {
   const rawToken = readRefreshTokenCookie(req.headers.cookie);
-  if (rawToken) {
-    await revokeSessionByRefreshToken(rawToken, 'logout');
+  const revoked = rawToken ? await revokeSessionByRefreshToken(rawToken, 'logout') : undefined;
+  if (revoked) {
+    await recordAuditLog(req, {
+      action: 'logout',
+      resource: 'auth',
+      resourceId: revoked.sessionId,
+      actor: { id: revoked.adminId },
+    });
   }
   clearRefreshTokenCookie(res);
   res.json({ data: { loggedOut: true } });

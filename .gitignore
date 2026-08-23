@@ -11,3 +11,10 @@ coverage/
 
 # Manual Docker (gerador + PDF) - mantido apenas localmente
 docs/docker-manual/
+
+# Agentes instalados por ./agentes/instalar.sh — copias geradas.
+# A fonte da verdade e' a pasta agentes/; versionar as duas so' criaria
+# duas verdades divergindo em silencio.
+.claude/agents/
+.cursor/rules/
+/AGENTS.md

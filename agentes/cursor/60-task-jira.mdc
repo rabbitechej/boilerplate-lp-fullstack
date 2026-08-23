@@ -1,0 +1,31 @@
+---
+description: Trabalhar uma task do Jira — do ticket ao PR
+alwaysApply: false
+---
+
+# Task do Jira
+
+Sem MCP/CLI do Jira configurado, **peça a descrição colada** — não invente conteúdo nem chave de issue.
+
+Precisa de chave, título, descrição e **critério de aceite**. Sem critério explícito, pergunte "como saberemos que está pronto?" antes de codar.
+
+**O ticket cabe em um commit?** A regra aqui é uma task = um commit (README 4.7), e ticket de Jira costuma ser três. Se for, proponha a quebra antes de começar.
+
+```bash
+git switch develop && git pull
+git switch -c feat/ABC-123-descricao-curta
+```
+
+Chave da issue sempre no nome da branch, no rodapé do commit (`Refs: ABC-123`) e no título do PR.
+
+```
+feat(backend): filtra audit log por período
+
+Refs: ABC-123
+```
+
+Antes do PR: `npm run typecheck && npm test && npm run lint`. Mexeu em auth, rota admin, upload ou validação? Rode também a auditoria de segurança.
+
+Ao fechar, entregue o texto para colar no Jira: o que foi feito (na linguagem de quem abriu), **decisões tomadas por falta de especificação** (em destaque — é o que volta como retrabalho), como validar, e o que ficou fora.
+
+Nunca mude status, responsável ou feche a issue por conta própria.

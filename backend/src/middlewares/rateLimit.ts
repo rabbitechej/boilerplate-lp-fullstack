@@ -1,5 +1,6 @@
 import type { NextFunction, Request, Response } from 'express';
 import RateLimit from '../models/RateLimit';
+import { logger } from '../utils/logger';
 
 type RateLimitOptions = {
   windowMs: number;
@@ -33,6 +34,13 @@ export function rateLimit(options: RateLimitOptions) {
       );
 
       if (current.count > options.max) {
+        logger.warn('rate limit atingido', {
+          keyPrefix: options.keyPrefix,
+          ip,
+          count: current.count,
+          max: options.max,
+          path: req.originalUrl.split('?')[0],
+        });
         res.status(429).json({
           error: { code: 'RATE_LIMITED', message: 'Muitas tentativas. Tente novamente mais tarde.' },
         });
@@ -40,7 +48,9 @@ export function rateLimit(options: RateLimitOptions) {
       }
       next();
     } catch (error) {
-      console.error('Erro ao aplicar rate limit:', error);
+      // Fail-open de proposito: um problema no contador nao pode tirar a API
+      // do ar. Fica em `error` para o alerta disparar caso vire regra.
+      logger.error('falha ao aplicar rate limit', { err: error, keyPrefix: options.keyPrefix });
       next();
     }
   };

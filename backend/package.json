@@ -8,7 +8,9 @@
     "build": "tsc -p tsconfig.build.json",
     "start": "node dist/server.js",
     "typecheck": "tsc --noEmit",
-    "test": "node --import tsx --test $(find src -name '*.test.ts')",
+    "test": "node --import tsx --test $(find src -name '*.test.ts' ! -path '*/integration/*')",
+    "test:integration": "node --import tsx --test $(find src -name '*.integration.test.ts')",
+    "test:all": "npm test && npm run test:integration",
     "lint": "eslint .",
     "admin:create": "tsx src/scripts/createAdmin.ts",
     "admin:create:prod": "node dist/scripts/createAdmin.js",
@@ -20,6 +22,7 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "@sentry/node": "^10.70.0",
     "bcrypt": "^6.0.0",
     "cloudinary": "^2.10.0",
     "cors": "^2.8.6",
@@ -27,7 +30,8 @@
     "express": "^5.2.1",
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.7.1",
-    "multer": "^2.2.0"
+    "multer": "^2.2.0",
+    "swagger-ui-express": "^5.0.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.18.0",
@@ -37,8 +41,10 @@
     "@types/jsonwebtoken": "^9.0.10",
     "@types/multer": "^2.1.0",
     "@types/node": "^25.9.3",
+    "@types/swagger-ui-express": "^4.1.8",
     "eslint": "^9.18.0",
     "eslint-config-prettier": "^9.1.0",
+    "mongodb-memory-server": "^11.2.0",
     "tsx": "^4.22.4",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.20.0"

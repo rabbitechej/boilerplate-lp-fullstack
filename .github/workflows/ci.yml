@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main, master]
+    branches: [main, master, develop]
   pull_request:
 
 jobs:
@@ -21,6 +21,7 @@ jobs:
       - run: npm ci
       - run: npm run typecheck
       - run: npm test
+      - run: npm run test:integration
       - run: npm run lint
       - run: npm run build
 
@@ -40,4 +41,9 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run lint
+      # VITE_* precisa existir no build (o Vite embute no bundle). A key do
+      # Web3Forms e publica por design, entao vai como Variable, nao Secret.
       - run: npm run build
+        env:
+          VITE_WEB3FORMS_ACCESS_KEY: ${{ vars.VITE_WEB3FORMS_ACCESS_KEY }}
+          VITE_ENABLE_BLOG: ${{ vars.VITE_ENABLE_BLOG }}

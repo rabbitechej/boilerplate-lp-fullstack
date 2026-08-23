@@ -11,6 +11,8 @@ import { LoginPage } from './admin/LoginPage';
 import { AdminPortal } from './admin/AdminPortal';
 import { PostsAdminPage } from './admin/PostsAdminPage';
 import { ImagesPage } from './admin/ImagesPage';
+import { AuditLogsPage } from './admin/AuditLogsPage';
+import { ContactMessagesPage } from './admin/ContactMessagesPage';
 import { getRoute } from './routing';
 
 export function App() {
@@ -58,7 +60,9 @@ export function App() {
     route.kind === 'admin-login' ||
     route.kind === 'admin-dashboard' ||
     route.kind === 'admin-posts' ||
-    route.kind === 'admin-images';
+    route.kind === 'admin-images' ||
+    route.kind === 'admin-audit' ||
+    route.kind === 'admin-contact-messages';
 
   if (isAdminRoute) {
     return (
@@ -69,6 +73,8 @@ export function App() {
           <AdminPortal>
             {route.kind === 'admin-posts' && <PostsAdminPage mode={route.mode} id={route.id} />}
             {route.kind === 'admin-images' && <ImagesPage />}
+            {route.kind === 'admin-audit' && <AuditLogsPage />}
+            {route.kind === 'admin-contact-messages' && <ContactMessagesPage />}
             {route.kind === 'admin-dashboard' && <p>Bem-vindo ao painel administrativo.</p>}
           </AdminPortal>
         )}
