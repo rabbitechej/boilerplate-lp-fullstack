@@ -26,7 +26,6 @@ Este boilerplate nasceu da extração dos padrões de arquitetura, segurança e 
 16. [Checklist de segurança pré-produção](#16-checklist-de-segurança-pré-produção)
 17. [Troubleshooting comum](#17-troubleshooting-comum)
 18. [Agentes de IA (`agentes/`)](#18-agentes-de-ia-agentes)
-19. [Próximos passos sugeridos](#19-próximos-passos-sugeridos)
 
 ---
 
