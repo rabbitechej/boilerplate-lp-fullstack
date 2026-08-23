@@ -74,6 +74,34 @@ Este boilerplate nasceu da extração dos padrões de arquitetura, segurança e 
 - **Banco de dados**: MongoDB (recomendado: cluster gratuito MongoDB Atlas — o Render não fornece banco gerenciado gratuito).
 - **Mídia**: Cloudinary (upload de imagens para o painel administrativo), porque o Render free tier tem sistema de arquivos efêmero (não persiste uploads locais entre deploys/restarts).
 
+### Dependências com versão
+
+**Backend** (`backend/package.json`) — Node `>= 20.19.0`:
+
+| Dependência | Versão | Para quê |
+|---|---|---|
+| `express` | ^5.2.1 | Servidor HTTP / API REST |
+| `mongoose` | ^9.7.1 | ODM MongoDB |
+| `jsonwebtoken` | ^9.0.3 | Access token JWT |
+| `bcrypt` | ^6.0.0 | Hash de senha/refresh token |
+| `cloudinary` | ^2.10.0 | Upload de imagens |
+| `multer` | ^2.2.0 | Parse de upload multipart |
+| `cors` | ^2.8.6 | CORS configurável |
+| `dotenv` | ^17.4.2 | Carrega `.env` em dev |
+
+Dev: `typescript` ^6.0.3, `tsx` ^4.22.4, `eslint` ^9.18.0 + `typescript-eslint` (flat config). Sem framework de teste externo — `node:test` nativo.
+
+**Frontend** (`frontend/package.json`):
+
+| Dependência | Versão | Para quê |
+|---|---|---|
+| `react` / `react-dom` | ^19.1.0 | UI |
+| `vite` | ^6.0.11 | Build/dev server |
+| `vitest` | ^3.2.6 | Testes |
+| `typescript` | ^5.8.3 | Tipagem |
+
+Sem router externo (router próprio, seção 3) e sem lib de UI (design próprio em CSS). Versões exatas (incl. transitivos) ficam travadas nos `package-lock.json`; para ver o que está desatualizado, `npm outdated` em cada pasta.
+
 ---
 
 ## 3. Estrutura de pastas
