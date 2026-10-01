@@ -240,10 +240,10 @@ describe('isValidEmail', () => {
 
 ### 4.6 Convenção de commits (Conventional Commits)
 
-Todos os commits seguem [Conventional Commits](https://www.conventionalcommits.org/):
+Todos os commits seguem [Conventional Commits](https://www.conventionalcommits.org/), usando o **número da task/issue como escopo**:
 
 ```
-<tipo>(<escopo opcional>): <descrição curta no imperativo>
+<tipo>(<número da task>): <descrição curta no imperativo>
 
 <corpo opcional explicando o porquê>
 ```
@@ -264,14 +264,16 @@ Tipos usados neste boilerplate:
 Exemplos:
 
 ```
-feat(backend): adiciona rota de criação de Testimonial
-fix(frontend): corrige loop de refresh quando access token expira
-chore: atualiza dependencias do backend
-test(backend): cobre rotacao de refresh token com deteccao de reuso
-docs: explica fluxo de deploy no Render
+feat(28): adiciona rota de criação de Testimonial
+fix(31): corrige loop de refresh quando access token expira
+chore(14): atualiza dependencias do backend
+test(17): cobre rotacao de refresh token com deteccao de reuso
+docs(42): explica fluxo de deploy no Render
 ```
 
-**Escopo** é opcional, mas recomendado quando a mudança é claramente de um lado só (`frontend`, `backend`, ou o nome do recurso: `posts`, `auth`).
+**Escopo é o número da task/issue** — o mesmo número que nomeia a branch (seção 4.8) — e não mais a área do código. Se o lado afetado importa para quem lê o log, ele vai na descrição, não no escopo: `feat(28): ajusta navbar no frontend` em vez de `feat(frontend): ...`.
+
+Só fica sem escopo o commit que não nasce de uma task numerada (ajuste pontual combinado em conversa, sem issue aberta): `chore: ajusta configuração do linter`.
 
 ### 4.7 Um commit por task
 
@@ -293,36 +295,36 @@ Evite: commits "wip", "ajustes", "varias coisas" — se a mensagem não cabe no 
 
 ### 4.8 Fluxo de branches e Pull Requests
 
-O código anda em uma direção só: **pessoa → `develop` → `main`**. Ninguém commita direto em `develop` nem em `main`.
+O código anda em uma direção só: **pessoa → `develop` → `main`**. Ninguém commita direto em `develop` nem em `main`. `develop` é a branch de **pré-aprovação**: é nela que as tasks se integram e passam por revisão antes de qualquer coisa ir para `main` (que é só o que está, de fato, em produção).
 
 ```
-feat/nome-da-task ──PR──▶ develop ──PR──▶ main ──▶ produção
-   (uma pessoa)            (integração)      (release)
+feat/NN-nome-da-task ──PR──▶ develop ──PR──▶ main ──▶ produção
+   (uma pessoa)            (pré-aprovação)      (release)
 ```
 
 | Branch | O que é | Quem escreve |
 |---|---|---|
 | `main` | o que está (ou pode ir) em produção. Sempre verde, sempre deployável | ninguém direto — só merge de PR vindo de `develop` |
-| `develop` | integração: onde as tasks de todo mundo se encontram antes do release | ninguém direto — só merge de PR vindo de branch de task |
+| `develop` | pré-aprovação: onde as tasks de todo mundo se encontram, são revisadas e validadas antes do release | ninguém direto — só merge de PR vindo de branch de task |
 | `feat/…`, `fix/…`, `chore/…` | a task de uma pessoa. Curta, some depois do merge | a pessoa dona da task |
 
-**Nome da branch:** mesmo tipo do commit + descrição em kebab-case — `feat/filtro-audit-log`, `fix/refresh-token-loop`, `chore/atualiza-deps`. Prefixe com o número da issue se o board usa (`feat/42-filtro-audit-log`).
+**Nome da branch:** `<tipo>/<número da task>-<descrição em kebab-case>` — o número é **obrigatório**, não opcional: `feat/28-identidade-visual`, `fix/31-refresh-token-loop`, `chore/14-atualiza-deps`. O número vem da issue/task do board (abra a issue antes de criar a branch, se ainda não existir) e é o mesmo usado no escopo do commit (seção 4.6) e no título do PR.
 
 **Ciclo de uma task:**
 
 ```bash
 git switch develop && git pull                 # sempre parta do develop atualizado
-git switch -c feat/filtro-audit-log
+git switch -c feat/42-filtro-audit-log
 
 # ... trabalha, seguindo 4.6 (mensagem) e 4.7 (um commit por task) ...
 npm run typecheck && npm test && npm run lint  # antes de empurrar
 
-git push -u origin feat/filtro-audit-log       # abre o PR para develop
+git push -u origin feat/42-filtro-audit-log    # abre o PR para develop
 ```
 
 **PR de task → `develop`:**
 
-- título no mesmo formato do commit (`feat(backend): filtra audit log por período`);
+- título no mesmo formato do commit (`feat(42): filtra audit log por período`);
 - descrição responde **o quê** e **por quê** — o *como* está no diff;
 - CI verde é obrigatório (typecheck, testes, lint, build nos dois pacotes);
 - pelo menos uma revisão de outra pessoa;
@@ -338,7 +340,7 @@ git push -u origin feat/filtro-audit-log       # abre o PR para develop
 
 **Configure a proteção no GitHub** (Settings → Branches), senão nada disso é regra, é só combinado: exija PR para `main` e `develop`, exija o CI passando, exija ao menos 1 aprovação, e bloqueie push direto e force-push.
 
-**Correção urgente em produção:** saia de `main` (`fix/hotfix-…`), abra PR para `main` e, depois do merge, **traga de volta para `develop`** (PR ou `git merge main`). Esquecer esse retorno é o jeito clássico de a correção sumir no próximo release.
+**Correção urgente em produção:** saia de `main` (`fix/NN-hotfix-…`), abra PR para `main` e, depois do merge, **traga de volta para `develop`** (PR ou `git merge main`). Esquecer esse retorno é o jeito clássico de a correção sumir no próximo release.
 
 > Se o projeto for de uma pessoa só, `develop` pode parecer burocracia — mas é ela que mantém `main` sempre deployável quando o cliente pede um ajuste no meio de uma feature pela metade.
 
